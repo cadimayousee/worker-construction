@@ -3,7 +3,6 @@ import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, TouchableWithoutFeedback, Keyboard, Image} from 'react-native';
 import { Input, NativeBaseProvider, Icon, Box, AspectRatio, Button } from 'native-base';
 import { FontAwesome5 } from '@expo/vector-icons';
-import download from "../assets/download.jpeg";
 import { Directus } from '@directus/sdk';
 import { Loading } from './Loading';
 import i18n from 'i18n-js';
@@ -12,23 +11,33 @@ import i18n from 'i18n-js';
 export default function Login({navigation}) {
 
     const [email, setEmail] = React.useState('esraa@cadimayouseeit.com');
-    const [pass, setPass] = React.useState('esraa123');
+    const [pass, setPass] = React.useState('12345');
     const [loading, setLoading] = React.useState(false);
     const directus = new Directus('https://iw77uki0.directus.app');
 
     async function login(){
-      await directus.items('users').readByQuery({
+      await directus.items('workers').readByQuery({
         filter: {
           email: email
         },
       }).then(async(res) => {
+        var user_id = res.data[0]?.id;
         if(res.data.length > 0){ //user with this email exists
           var hash_password = res.data[0].password;
           await directus.utils.hash.verify(pass, hash_password)
-          .then((matches) => {
+          .then(async (matches) => {
             if(matches == true){ //account valid
-              setLoading(false);
-              navigation.navigate('Drawer', {id: res.data[0].id});
+               //patch
+                await directus.items('workers').updateOne(user_id, {
+                  now_status: "online"
+                })
+                .then((res) =>{
+                  setLoading(false);
+                  navigation.navigate('Tabs', {id: user_id});
+                })
+                .catch((err) => {
+                  alert(err.message);
+                });
             }
             else{ //incorrect password
               setLoading(false);
@@ -131,7 +140,6 @@ export default function Login({navigation}) {
         </View>
         </View>
        
-
         {/* Button */}
         <View style={styles.buttonStyle}>
 
@@ -145,7 +153,6 @@ export default function Login({navigation}) {
         </View>
 
         <StatusBar style="auto" />
-          <Image source={download} style={styles.image}/>
 
         </View>
       </TouchableWithoutFeedback>

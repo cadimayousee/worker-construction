@@ -9,7 +9,6 @@ import {
     TextInput
 } from 'react-native';
 import { Ionicons , Feather} from '@expo/vector-icons'; 
-import { DrawerActions } from '@react-navigation/native';
 import i18n from 'i18n-js';
 
 const width = Dimensions.get('window').width;
@@ -18,6 +17,7 @@ export const SearchBar =  function(props){
     
     return(
         <View style={styles.container}>
+
             <View style = {styles.leftCol}>
                 {/* <Feather name="search" size={25} color="black" style={{alignSelf: 'center'}}/> */}
                 <Ionicons name="hammer-outline" size={25} style={{alignSelf: 'center'}} />
@@ -29,11 +29,6 @@ export const SearchBar =  function(props){
             onEndEditing={(text) => props.setSearchText(text.nativeEvent.text)}
             
             />
-
-            <TouchableOpacity onPress={() => props.navigation.dispatch(DrawerActions.toggleDrawer())} style = {styles.rightCol}>
-                {/* <Ionicons name="hammer-outline" size={25} style={{alignSelf: 'center'}} /> */}
-                <Ionicons name="menu" size={25} style={{alignSelf: 'center'}} />
-            </TouchableOpacity>
 
         </View>
     );

@@ -23,12 +23,13 @@ export default function ChangePassword ({navigation, route}){
         }
         else{
             //patch
-            await directus.items('users').updateOne(userData, {
-                password: pass
+            await directus.items('workers').updateOne(userData, {
+                password: pass,
+                now_status: "online"
             })
             .then((res) =>{
                 setLoading(false);
-                navigation.navigate('Drawer', {id: userData});
+                navigation.navigate('Tabs', {id: userData});
             })
             .catch((err) => {
                 setLoading(false);

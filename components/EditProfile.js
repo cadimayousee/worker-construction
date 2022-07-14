@@ -9,7 +9,7 @@ import Toast from 'react-native-root-toast';
 
 const directus = new Directus('https://iw77uki0.directus.app');
 
-function Item({item, setFirstName, setLastName, setMobile, setAddress, setEmail}) {
+function Item({item, setFirstName, setLastName, setMobile, setEmail, setCategory}) {
     return (
         <View style={styles.listItem}>
             <Text style={styles.title}>{item.name + "   "}</Text>
@@ -19,7 +19,7 @@ function Item({item, setFirstName, setLastName, setMobile, setAddress, setEmail}
             onChangeText={(text) => item.id == 0 ? setFirstName(text) 
                 : item.id == 1 ? setLastName(text) 
                 : item.id == 2 ? setMobile(text)
-                : item.id == 3 ? setAddress(text) 
+                : item.id == 3 ? setCategory(text)
                 : item.id == 4 ? setEmail(text) : null}
             >
             </TextInput>
@@ -37,7 +37,22 @@ function validate(text){
     }
   }      
 
-async function saveDetails(userData, firstName, lastName, mobile, address, email, setLoading, navigation){
+async function logout(userData, setLoading, navigation){
+    //patch
+    await directus.items('workers').updateOne(userData.id, {
+        now_status: "offline"
+    })
+    .then((res) =>{
+        setLoading(false);
+        alert(i18n.t('relogin2'));
+        navigation.navigate('Login')
+    })
+    .catch((err) => {
+        alert(err.message);
+    });
+}
+
+async function saveDetails(userData, firstName, lastName, mobile, email, category, setLoading, navigation){
     setLoading(true);
     var flag = false;
 
@@ -51,7 +66,7 @@ async function saveDetails(userData, firstName, lastName, mobile, address, email
         }
 
         if(valid == true){
-            await directus.items('users').readByQuery({
+            await directus.items('workers').readByQuery({
             filter: {
                 email : email
             },
@@ -69,17 +84,15 @@ async function saveDetails(userData, firstName, lastName, mobile, address, email
 
     if(flag == false){
         //patch
-        await directus.items('users').updateOne(userData.id, {
+        await directus.items('workers').updateOne(userData.id, {
             first_name: firstName,
             last_name: lastName,
             mobile_number: mobile,
-            address: address,
-            email: email
+            email: email,
+            category: category
         })
         .then((res) =>{
-            setLoading(false);
-            alert(i18n.t('relogin2'));
-            navigation.navigate('Login');
+            logout(userData, setLoading, navigation);
         })
         .catch((err) => {
             setLoading(false);
@@ -94,17 +107,22 @@ export default function EditProfile({route,navigation}){
     const [firstName, setFirstName] = React.useState(userData?.first_name);
     const [lastName, setLastName] = React.useState(userData?.last_name);
     const [mobile, setMobile] = React.useState(userData?.mobile_number);
-    const [address, setAddress] = React.useState(userData?.address);
     const [email, setEmail] = React.useState(userData?.email);
+    const [category, setCategory] = React.useState(userData?.category);
 
     const id = route.params?.userData;
     const [userData, setUserData] = React.useState();
 
     async function getData(){
-        await directus.items('users').readOne(id.id)
+        await directus.items('workers').readOne(id.id)
         .then(async(res) => {
           if(Object.keys(res).length !== 0){ //got user 
             setUserData(res);
+            setFirstName(res.first_name);
+            setLastName(res.last_name);
+            setEmail(res.email);
+            setMobile(res.mobile_number);
+            setCategory(res.category);
             setLoading(false);
           }
         })
@@ -137,8 +155,8 @@ export default function EditProfile({route,navigation}){
             },
             {
                 id: 3,
-                name:i18n.t('address'),
-                placeholder: userData?.address !== null ? userData?.address + " " : 'Not Specified'
+                name:i18n.t('category'),
+                placeholder: userData?.category + " "
             },
             {
                 id: 4,
@@ -164,12 +182,12 @@ export default function EditProfile({route,navigation}){
                   style={styles.flatList}
                   data={state.routes}
                   renderItem={({ item }) => 
-                  <Item  item={item} setFirstName={setFirstName} setLastName={setLastName} setMobile={setMobile} setAddress={setAddress} setEmail={setEmail}/>}
+                  <Item  item={item} setFirstName={setFirstName} setLastName={setLastName} setMobile={setMobile} setEmail={setEmail} setCategory={setCategory}/>}
                   keyExtractor={item => item.name}
             /> 
 
             <View style={{marginBottom: 40}}>
-                <Button title={i18n.t('save')} onPress={() => saveDetails(userData,firstName, lastName, mobile, address, email, setLoading, navigation)} />
+                <Button title={i18n.t('save')} onPress={() => saveDetails(userData,firstName, lastName, mobile, email, category, setLoading, navigation)} />
             </View>
 
         </View>

@@ -12,8 +12,7 @@ import { Loading } from './Loading';
 
 function Item({item, navigate, userData}) {
     return (
-        <TouchableOpacity style={styles.listItem} onPress={()=> item.name == i18n.t('logout') ? navigate('Login') 
-        : item.name == i18n.t('settings') ? navigate('Settings',{userData}) : null}>
+        <TouchableOpacity style={styles.listItem} onPress={()=> item.name == i18n.t('settings') ? navigate('Settings',{userData}) : null}>
             <Ionicons name={item.icon} size={32} />
             <Text style={styles.title}>{item.name}</Text>
         </TouchableOpacity>
@@ -25,16 +24,24 @@ export default function Profile({route, navigation}){
   const height = Dimensions.get('screen').height;
   const directus = new Directus('https://iw77uki0.directus.app');
   
-  const id = route.params?.userData;
+  const id = route.params;
   const [userData, setUserData] = React.useState();
   const [loading, setLoading] = React.useState(false);
 
   async function getData(){
-    await directus.items('users').readOne(id.id)
+    await directus.items('workers').readOne(id.id)
     .then(async(res) => {
       if(Object.keys(res).length !== 0){ //got user 
         setUserData(res);
         setLoading(false);
+
+        //if any of the userdata isnt complete show toast
+        if(res?.mobile_number == 0){
+          Toast.show(i18n.t('toastString'), {
+              duration: Toast.durations.LONG,
+              position: 1
+          })
+      }
       }
     })
     .catch((error) => {
@@ -58,22 +65,14 @@ export default function Profile({route, navigation}){
     const state = {
         routes:[
             {
-                name: i18n.t('viewJobs'),
-                icon:"file-tray-stacked"
-            },
-            {
                 name:i18n.t('settings'),
                 icon:"settings-outline"
             },
+            // {
+            //   name:i18n.t('logout'),
+            //   icon:"exit-outline"
+            // },
         ]
-    }
-
-    //if any of the userdata isnt complete show toast
-    if(userData?.address == null || userData?.mobile_number == 0){
-        Toast.show(i18n.t('toastString'), {
-            duration: Toast.durations.LONG,
-            position: 1
-        })
     }
     
     return (
@@ -91,15 +90,15 @@ export default function Profile({route, navigation}){
               <View style = {styles.profileCategories}>
 
                     <View style={{alignItems:'center'}}>
-                        <Text style={styles.number_text}>{userData?.jobs_created}</Text>
-                        <Text style={styles.email_text}>{i18n.t('jobsCreated')}</Text>
+                        <Text style={styles.number_text}>0</Text>
+                        <Text style={styles.email_text}>{i18n.t('jobsDone')}</Text>
                     </View>
 
                     <View style={styles.sidebarDivider} />
 
                     <View style={{alignItems:'center'}}>
-                        <Text style={styles.number_text}>{userData?.workers_hired}</Text>
-                        <Text style={styles.email_text}>{i18n.t('workersHired')}</Text>
+                        <Text style={styles.number_text}>0</Text>
+                        <Text style={styles.email_text}>{i18n.t('jobsInProgress')}</Text>
                     </View>
 
                     <View style={styles.sidebarDivider} />

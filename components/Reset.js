@@ -25,7 +25,7 @@ export default function Reset({navigation}){
     };
 
     async function verifyEmail(){
-        await directus.items('users').readByQuery({
+        await directus.items('workers').readByQuery({
             filter: {
               email: email
             },

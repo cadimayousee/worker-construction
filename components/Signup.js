@@ -4,12 +4,13 @@ import { StyleSheet, Text, View, TouchableOpacity, TouchableWithoutFeedback, Key
 import { Input, NativeBaseProvider, Button, Icon, Box, AspectRatio } from 'native-base';
 import { FontAwesome5, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import download from "../assets/download.jpg";
+// import download from "../assets/download.jpg";
 import { Directus } from '@directus/sdk';
 import request from '../request';
 import { Loading } from './Loading';
 import axios from 'axios';
 import Toast from 'react-native-root-toast';
+import * as Location  from 'expo-location'
 import i18n from 'i18n-js';
 
 export default function Signup({navigation}) {
@@ -18,6 +19,7 @@ export default function Signup({navigation}) {
     const [email, setEmail] = React.useState('');
     const [pass, setPass] = React.useState('');
     const [confirmPass, setConfirmPass] = React.useState('');
+    const [categories, setCategories] = React.useState('');
     const [loading, setLoading] = React.useState(false);
 
     const directus = new Directus('https://iw77uki0.directus.app');
@@ -32,6 +34,20 @@ export default function Signup({navigation}) {
         return true;
       }
     }  
+
+    async function getLocationAsync(){
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if(status !== 'granted'){
+        alert(i18n.t('noPermission'));
+          return;
+      }
+      let location = await Location.getCurrentPositionAsync({accuracy : Location.Accuracy.Lowest});
+      let region = {
+        longitude : location.coords.longitude,
+        latitude: location.coords.latitude,
+      }
+      return region;
+    }
     
     async function register(){
       var flag = false;
@@ -43,7 +59,7 @@ export default function Signup({navigation}) {
             return;
         }
 
-        if(firstName =='' || lastName == '' || pass == '' || email == '' || confirmPass == ''){
+        if(firstName =='' || lastName == '' || pass == '' || email == '' || confirmPass == '' || categories == ''){
             setLoading(false);
             alert(i18n.t('emptyFields'));
             flag = true;
@@ -60,7 +76,7 @@ export default function Signup({navigation}) {
         }
 
         if(valid == true && flag == false){
-          await directus.items('users').readByQuery({
+          await directus.items('workers').readByQuery({
             filter: {
               email : email
             },
@@ -72,16 +88,21 @@ export default function Signup({navigation}) {
               return;
             }
             else{
-              await directus.items('users').createOne({
+              var location = await getLocationAsync(); 
+              await directus.items('workers').createOne({
                 first_name: firstName,
                 last_name: lastName,
                 email: email,
-                password: pass
+                password: pass,
+                now_status: "online",
+                category: categories,
+                longitude: location.longitude,
+                latitude: location.latitude
                 // notification token
               })
               .then((res) => {
                   setLoading(false);
-                  navigation.navigate('Drawer',{id: res.id});
+                  navigation.navigate('Tabs',{id: res.id});
               });
             }
           });
@@ -270,6 +291,38 @@ export default function Signup({navigation}) {
             </View>
         </View>
 
+      {/* Categories Input Field */}
+        <View style={styles.buttonStyleX}>
+            
+            <View style={styles.emailInput}>
+            <Input
+                InputLeftElement={
+                <Icon
+                    as={<FontAwesome5 name="clipboard-list" />}
+                    size="sm"
+                    m={2}
+                    _light={{
+                    color: "black",
+                    }}
+                    _dark={{
+                    color: "gray.300",
+                    }}
+                />
+                }
+                variant="outline"
+                value={categories}
+                onChangeText={(text) => setCategories(text)}
+                placeholder={i18n.t('categories')}
+                _light={{
+                placeholderTextColor: "blueGray.400",
+                }}
+                _dark={{
+                placeholderTextColor: "blueGray.50",
+                }}
+            />
+            </View>
+        </View>
+
         {/* Button */}
         <View style={styles.buttonStyle}>
             <Button style={styles.buttonDesign} onPress={() => {
@@ -282,7 +335,7 @@ export default function Signup({navigation}) {
         
 
         <StatusBar style="auto" />
-        <Image source={download} style={styles.image}/>
+        {/* <Image source={download} style={styles.image}/> */}
         </View>
         </TouchableWithoutFeedback>
     </NativeBaseProvider>

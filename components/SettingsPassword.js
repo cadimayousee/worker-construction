@@ -51,6 +51,21 @@ export default function SettingsPassword({route,navigation}){
         ]
     }
 
+    async function logout(id){
+        //patch
+        await directus.items('workers').updateOne(id, {
+            now_status: "offline"
+        })
+        .then((res) =>{
+            setLoading(false);
+            alert(i18n.t('relogin'));
+            navigation.navigate('Login')
+        })
+        .catch((err) => {
+            alert(err.message);
+        });
+    }
+
     async function changePass(){
         setLoading(true);
         var flag = false;
@@ -70,7 +85,7 @@ export default function SettingsPassword({route,navigation}){
         }
 
         if(flag == false){
-            await directus.items('users').readOne(id.id)
+            await directus.items('workers').readOne(id.id)
             .then(async(res) => {
                 if(Object.keys(res).length !== 0){ //user is correct, verify old password
                 var hash_password = res.password;
@@ -78,13 +93,11 @@ export default function SettingsPassword({route,navigation}){
                 .then(async (matches) => {
                     if(matches == true){ //old password correct, change password
                         //patch
-                    await directus.items('users').updateOne(id.id, {
+                    await directus.items('workers').updateOne(id.id, {
                         password: newPassword
                     })
                     .then((res) =>{
-                        setLoading(false);
-                        alert(i18n.t('relogin'));
-                        navigation.navigate('Login');
+                       logout(id.id);
                     })
                     .catch((err) => {
                         setLoading(false);

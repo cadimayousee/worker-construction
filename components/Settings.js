@@ -2,14 +2,31 @@ import * as React from 'react';
 import { View , Text , Platform, StyleSheet, Dimensions, FlatList, TouchableOpacity} from 'react-native';
 import i18n from 'i18n-js';
 import {Ionicons} from '@expo/vector-icons'; 
+import { Directus } from '@directus/sdk';
+
+const directus = new Directus('https://iw77uki0.directus.app');
+
+async function logout(userData, navigate){
+    //patch
+    await directus.items('workers').updateOne(userData.id, {
+        now_status: "offline"
+    })
+    .then((res) =>{
+        navigate('Login')
+    })
+    .catch((err) => {
+        alert(err.message);
+    });
+}
 
 function options(name, navigate, userData){
 
     if(name == i18n.t('terms') || name == i18n.t('privacyPolicy') || name == i18n.t('help')) //need to write this later
         navigate('DummyPage')
 
-    if(name == i18n.t('logout'))
-        navigate('Login')
+    if(name == i18n.t('logout')){
+        logout(userData, navigate)
+    }
 
     if(name == i18n.t('editProfile')) 
         navigate('EditProfile',{userData});
