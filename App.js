@@ -34,6 +34,7 @@ import EditProfile from "./components/EditProfile";
 import SettingsPassword from './components/SettingsPassword';
 import Jobs from './components/Jobs';
 import IncomingJobs from './components/IncomingJobs';
+import Chat from './components/Chat';
 
 const directus = new Directus('https://iw77uki0.directus.app');
 
@@ -68,6 +69,7 @@ export default function App() {
             <Stack.Screen name="DummyPage" component={DummyPage} />
             <Stack.Screen name="EditProfile" component={EditProfile} />
             <Stack.Screen name="SettingsPassword" component={SettingsPassword} />
+            <Stack.Screen name="Chat" component={Chat} />
           </Stack.Navigator>
         </NavigationContainer>
     </SafeAreaProvider>

@@ -30,6 +30,7 @@
     "geolib": "^3.3.3",
     "i18n-js": "^3.9.2",
     "localstorage-polyfill": "^1.0.1",
+    "moment": "^2.29.4",
     "native-base": "^3.4.8",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
@@ -37,8 +38,10 @@
     "react-native-elements": "^3.4.2",
     "react-native-gesture-handler": "^2.5.0",
     "react-native-get-random-values": "^1.8.0",
+    "react-native-gifted-chat": "^1.0.3",
     "react-native-maps": "^1.0.0",
     "react-native-modal": "^13.0.1",
+    "react-native-pager-view": "5.4.15",
     "react-native-reanimated": "~2.8.0",
     "react-native-responsive-dimensions": "^3.1.1",
     "react-native-root-toast": "^3.4.0",
@@ -47,8 +50,7 @@
     "react-native-svg": "^12.3.0",
     "react-native-tab-view": "^3.1.1",
     "react-native-web": "0.17.7",
-    "translate-json-object": "^2.3.7",
-    "react-native-pager-view": "5.4.15"
+    "translate-json-object": "^2.3.7"
   },
   "devDependencies": {
     "@babel/core": "^7.12.9"

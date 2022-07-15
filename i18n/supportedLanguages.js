@@ -75,7 +75,8 @@ const en = {
     acceptedJob: "Contractor notified! View the accepted job in 'My Jobs' tab above",
     accept: "ACCEPT",
     decline: "DECLINE",
-    contact: "CONTACT CONTRACTOR"
+    contact: "CONTACT CONTRACTOR",
+    declineJ: "🕓 DECLINE JOB"
 }
 
 const localized_strings = {

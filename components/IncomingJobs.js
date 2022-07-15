@@ -5,6 +5,7 @@ import { Card, ListItem, Button, Icon } from 'react-native-elements';
 import { useFocusEffect } from '@react-navigation/native';
 import { Directus } from '@directus/sdk';
 import { Loading } from './Loading';
+import moment from 'moment'
 import i18n from 'i18n-js';
 
 const directus = new Directus('https://iw77uki0.directus.app');
@@ -24,13 +25,11 @@ export default function IncomingJobs({route}){
         })
     }
 
-    React.useEffect(() => {
-        getJobs();
-    },[]);  
-
-    useFocusEffect(() => {
-        getJobs();
-     });
+    useFocusEffect(
+        React.useCallback(() => {
+          getJobs();
+        }, [])
+    );
 
     async function accept(job){
         setLoading(true);
@@ -44,7 +43,8 @@ export default function IncomingJobs({route}){
             .then(async (response) => {
                 await directus.items('jobs').updateOne(job.id, {
                     now_status: 'in progress',
-                    number_of_workers: job.number_of_workers - 1
+                    number_of_workers: job.number_of_workers - 1,
+                    accepted_time: moment(),
                 })
                 .then((response) => {
                     getJobs();
@@ -118,11 +118,13 @@ export default function IncomingJobs({route}){
                         title={i18n.t('accept')}
                         onPress={() => accept(job)}
                         />
+
                     <Button
                         buttonStyle={styles.declineButton}
                         title={i18n.t('decline')}
                         onPress={() => decline(index)}
                         />
+
                     </Card>
                 )
             })}
