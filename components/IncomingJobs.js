@@ -36,14 +36,14 @@ export default function IncomingJobs({route}){
         await directus.items('workers').readOne(id)
         .then(async (res) => {
             //patch job 
-            await directus.items('jobs_workers').createOne({
-                jobs_id: job.id,
-                workers_id: res.id
-            })
+            await directus.items('jobs').readOne(job.id)
             .then(async (response) => {
+                var arr = [...response.workers];
+                arr.push(res.id);
                 await directus.items('jobs').updateOne(job.id, {
                     now_status: 'in progress',
                     number_of_workers: job.number_of_workers - 1,
+                    workers : arr,
                     accepted_time: moment(),
                 })
                 .then((response) => {
@@ -61,8 +61,10 @@ export default function IncomingJobs({route}){
         });
     }
 
-    function decline(index){ //temp method
-        jobs.splice(index , 1);
+    function decline(index){ 
+        var all_jobs = [...jobs]
+        all_jobs.splice(index, 1);
+        setJobs(all_jobs);
     }
 
     return(

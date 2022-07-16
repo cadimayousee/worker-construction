@@ -76,7 +76,8 @@ const en = {
     accept: "ACCEPT",
     decline: "DECLINE",
     contact: "CONTACT CONTRACTOR",
-    declineJ: "🕓 DECLINE JOB"
+    declineJ: "🕓 DECLINE JOB",
+    status: 'Job Status: ',
 }
 
 const localized_strings = {

@@ -16,12 +16,21 @@ export default function Jobs({route, navigation}){
     const id = route.params.id;
 
     async function getJobs(){
-        await directus.items('jobs').readByQuery({ filter: {now_status: 'in progress'}})
+        await directus.items('jobs').readByQuery({filter : {now_status : {_in: ['completed' , 'in progress']}}})
         .then((res) => {    
             res.data.forEach((job) => {
-                if(moment().isBefore(moment(job.accepted_time).add(3, 'minutes')))
-                    job.can_decline = true;
+                var arr = [...job.workers];
+                if(arr.includes(id)){
+                    if(job.now_status == 'in progress'){
+                        if(moment().isBefore(moment(job.accepted_time).add(3, 'minutes')))
+                            job.can_decline = true;
+                    }
+                    else{ //completed
+                        job.can_decline = false;
+                    }
+                }
             })
+            res.data.sort((a, b) => a.now_status > b.now_status ? -1 : a.now_status < b.now_status ? 1 : 0);
             setJobs(res.data);
         })
         .catch((err) => {
@@ -40,9 +49,10 @@ export default function Jobs({route, navigation}){
         const timer = setInterval(() => {
         let data = [...jobs];
         data.forEach((job) => {
-            if(!moment().isBefore(moment(job.accepted_time).add(3, 'minutes')))
+            if(job.now_status == 'in progress' && !moment().isBefore(moment(job.accepted_time).add(3, 'minutes')))
                 job.can_decline = false;
           })
+          data.sort((a, b) => a.now_status > b.now_status ? -1 : a.now_status < b.now_status ? 1 : 0);
           setJobs(data);
         }, 60000); 
         return () => {
@@ -53,15 +63,30 @@ export default function Jobs({route, navigation}){
 
     async function openChat(contractor_id){
         setLoading(true);
-        await directus.items('chats').createOne({
+        //see if an existing chat was created
+        await directus.items('chats').readByQuery({filter : {
             contractor: contractor_id,
             worker: id,
-            messages: []
-        })
-        .then((res) => {
-            console.log("RES " + JSON.stringify(res));
-            setLoading(false);
-            navigation.navigate('Chat', {chat_id: res.id, user_id: id, contractor_id: contractor_id});
+        }})
+        .then(async (data) => {
+            var chat_id;
+            if(data.data.length > 0){ //chat was opened already 
+                chat_id = data.data[0].id;
+            }
+            else{
+                await directus.items('chats').createOne({
+                    contractor: contractor_id,
+                    worker: id,
+                })
+                .then(async (res) => {
+                    chat_id = res.id;
+                });
+            }
+            await directus.items('workers').readOne(id)
+            .then((info) => {
+                setLoading(false);
+                navigation.navigate('Chat', {chat_id: chat_id, user_id: id, user_info: info});
+            })
         })
     }
 
@@ -92,6 +117,26 @@ export default function Jobs({route, navigation}){
                 }
             )
         });
+    }
+
+    async function declineJob(job){
+        setLoading(true);
+        var index = jobs.indexOf(job);
+        var db_jobs = [...job.workers];
+        var worker_index = db_jobs.indexOf(job.id);
+        db_jobs.splice(worker_index, 1);
+       if(job.workers.length == 1){ //1 or only worker who accepted
+        await directus.items('jobs').updateOne(job.id, {
+            now_status: 'created',
+            number_of_workers: job.number_of_workers + 1,
+            workers: db_jobs
+        }).then(() => {
+            var updated_jobs = [...jobs];
+            updated_jobs.splice(index, 1);
+            setJobs(updated_jobs);
+            setLoading(false);
+        })
+       }
     }
 
     return(
@@ -143,6 +188,15 @@ export default function Jobs({route, navigation}){
                         </Text>
                     </Text> : null}
 
+                    <Text style={{marginBottom: 10}}>
+                        <Text style={styles.titles}>
+                            {i18n.t('status') + " "}
+                        </Text>
+                        <Text style={styles.subtitles}>
+                            {job.now_status}
+                        </Text>
+                    </Text>
+
                     <Button
                         buttonStyle={styles.viewButton}
                         title={i18n.t('contact')}
@@ -152,8 +206,9 @@ export default function Jobs({route, navigation}){
                     <Button
                         buttonStyle={styles.declineButton}
                         title={i18n.t('declineJ')}
+                        onPress={() => declineJob(job)}
                         />
-                    : null}
+                     : null} 
                     </Card>
                 )
             })}
