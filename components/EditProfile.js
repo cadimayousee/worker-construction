@@ -5,7 +5,6 @@ import {Ionicons} from '@expo/vector-icons';
 import { Directus } from '@directus/sdk';
 import { Loading } from './Loading';
 import axios from 'axios';
-import Toast from 'react-native-root-toast';
 
 const directus = new Directus('https://iw77uki0.directus.app');
 

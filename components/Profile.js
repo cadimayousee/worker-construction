@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, TouchableOpacity, TouchableWithoutFeedback, Keyboard, Image, Dimensions, FlatList} from 'react-native';
 import profileImg from "../assets/profile.jpg";
 import {Ionicons} from '@expo/vector-icons'; 
-import Toast from 'react-native-root-toast';
+import Toast from 'react-native-toast-message';
 import i18n from 'i18n-js';
 import { Directus } from '@directus/sdk';
 import { Loading } from './Loading';
@@ -37,10 +37,10 @@ export default function Profile({route, navigation}){
 
         //if any of the userdata isnt complete show toast
         if(res?.mobile_number == 0){
-          Toast.show(i18n.t('toastString'), {
-              duration: Toast.durations.LONG,
-              position: 1
-          })
+          Toast.show({
+            type: 'error',
+            text1: i18n.t('toastString')
+          });
       }
       }
     })
