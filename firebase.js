@@ -25,4 +25,4 @@ const fireDB = app.firestore();
 const database = getDatabase(app);
 // const auth = firebase.auth();
 
-export { fireDB , database};
+export { firebase, fireDB , database};

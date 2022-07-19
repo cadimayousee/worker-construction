@@ -23,7 +23,7 @@ import i18n from 'i18n-js';
 import { I18nManager } from 'react-native';
 import localized_strings from './i18n/supportedLanguages';
 import Toast from 'react-native-toast-message';
-import messaging from '@react-native-firebase/messaging';
+// import messaging from '@react-native-firebase/messaging';
 
 import Login from './components/Login';
 import Signup from "./components/Signup";
@@ -58,15 +58,15 @@ export default function App() {
     }
   },[]);
 
-  React.useEffect(() => {
-    messaging().onMessage(async remoteMessage => {
-      Toast.show({
-        type: 'success',
-        text1: remoteMessage.notification.title,
-        text2: remoteMessage.notification.body
-      });
-    });
-  },[]);
+  // React.useEffect(() => {
+  //   messaging().onMessage(async remoteMessage => {
+  //     Toast.show({
+  //       type: 'success',
+  //       text1: remoteMessage.notification.title,
+  //       text2: remoteMessage.notification.body
+  //     });
+  //   });
+  // },[]);
 
 
   return (
