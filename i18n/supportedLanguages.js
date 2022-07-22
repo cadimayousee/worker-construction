@@ -78,6 +78,15 @@ const en = {
     contact: "CONTACT CONTRACTOR",
     declineJ: "🕓 DECLINE JOB",
     status: 'Job Status: ',
+    contactAlert: "Contact Contractor",
+    contactDescription: "You can follow up on the job details by contacting the contractor through phone number or through our chat",
+    cancelAlert: "Cancel",
+    phoneAlert: "Phone",
+    chatAlert: "Chat",
+    notificationTitle: "A Worker accepted your posted job!",
+    notificationBody: "Check it out",
+    notificationTitle2: "Recently accepted worker declined job",
+    notificationBody2: "We'll keep looking!",
 }
 
 const localized_strings = {

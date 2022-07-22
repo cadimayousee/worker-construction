@@ -7,13 +7,15 @@ import { Directus } from '@directus/sdk';
 import { Loading } from './Loading';
 import moment from 'moment'
 import i18n from 'i18n-js';
+import { directus, yourServerKey, firebaseURL } from '../constants';
+import { useSelector, useDispatch } from 'react-redux';
+import axios from 'axios';
 
-const directus = new Directus('https://iw77uki0.directus.app');
-
-export default function IncomingJobs({route}){
+export default function IncomingJobs({route, navigation}){
     const [jobs, setJobs] = React.useState([]);
     const [loading, setLoading] = React.useState(false);
-    const id = route.params.id;
+    const storeState = useSelector(state => state.userReducer);
+    const userData = storeState.user;
 
     async function getJobs(){
         await directus.items('jobs').readByQuery({ filter: {now_status: 'created'}})
@@ -31,34 +33,54 @@ export default function IncomingJobs({route}){
         }, [])
     );
 
+    async function notifyContractor(contractor){
+        await axios({
+            method: 'post',
+            url: firebaseURL,
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": ['key', yourServerKey].join('=')
+            },
+            data: {
+              to: contractor.notification_token,
+              notification: {
+                title: i18n.t('notificationTitle'),
+                body: i18n.t('notificationBody')
+              }
+            }
+        })
+    }
+
     async function accept(job){
         setLoading(true);
-        await directus.items('workers').readOne(id)
-        .then(async (res) => {
             //patch job 
             await directus.items('jobs').readOne(job.id)
             .then(async (response) => {
                 var arr = [...response.workers];
-                arr.push(res.id);
+                arr.push(userData.id);
                 await directus.items('jobs').updateOne(job.id, {
                     now_status: 'in progress',
                     number_of_workers: job.number_of_workers - 1,
                     workers : arr,
                     accepted_time: moment(),
                 })
-                .then((response) => {
-                    getJobs();
-                    setLoading(false);
-                    alert(i18n.t('acceptedJob'));
+                .then(() => { //hired for job
+                    await directus.items('users').readOne(response.contractor).then((contractor) => {
+                        await directus.items('users').updateOne(response.contractor, {
+                            workers_hired : contractor.workers_hired + 1
+                        }).then(() => {
+                            //send notification to contractor
+                            notifyContractor(contractor);
+                            getJobs();
+                            setLoading(false);
+                            alert(i18n.t('acceptedJob'));
+                        })
+                    })
                 })
             })
             .catch((err) => {
                 alert(err);
             });
-        })
-        .catch((err) => {
-            alert(err);
-        });
     }
 
     function decline(index){ 

@@ -3,16 +3,22 @@ import { View , Text , Platform, StyleSheet, Dimensions, FlatList, TouchableOpac
 import i18n from 'i18n-js';
 import {Ionicons} from '@expo/vector-icons'; 
 import { Directus } from '@directus/sdk';
-
-const directus = new Directus('https://iw77uki0.directus.app');
+import messaging from '@react-native-firebase/messaging';
+import { useSelector, useDispatch} from 'react-redux';
+import { directus } from '../constants';
+import { addUser } from '../redux/actions';
 
 async function logout(userData, navigate){
+    const dispatch = useDispatch();
     //patch
     await directus.items('workers').updateOne(userData.id, {
         now_status: "offline"
     })
     .then((res) =>{
-        navigate('Login')
+        dispatch(addUser(res));
+        messaging().unsubscribeFromTopic('workers').then(() => {
+            navigate('Login')
+        })
     })
     .catch((err) => {
         alert(err.message);
@@ -29,10 +35,10 @@ function options(name, navigate, userData){
     }
 
     if(name == i18n.t('editProfile')) 
-        navigate('EditProfile',{userData});
+        navigate('EditProfile');
 
     if(name == i18n.t('changePass'))
-        navigate('SettingsPassword',{userData});
+        navigate('SettingsPassword');
 }
 
 function Item({item, navigate, userData}) {
@@ -47,7 +53,8 @@ function Item({item, navigate, userData}) {
 
 export default function Settings({route,navigation}){
 
-    const id = route.params?.userData;
+    const storeState = useSelector(state => state.userReducer);
+    const userData = storeState.user;
 
     const state = {
         routes:[
@@ -105,7 +112,7 @@ export default function Settings({route,navigation}){
             <FlatList
                   style={styles.flatList}
                   data={state.routes}
-                  renderItem={({ item }) => <Item  item={item} navigate={navigation.navigate} userData={id}/>}
+                  renderItem={({ item }) => <Item  item={item} navigate={navigation.navigate} userData={userData}/>}
                   keyExtractor={item => item.name}
               />
 

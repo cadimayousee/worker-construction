@@ -10,8 +10,7 @@ import axios from 'axios';
 import i18n from 'i18n-js';
 
 export default function OTP ({navigation, route}){
-    const userData = route.params[0];
-    const otp = route.params[1]; 
+    const otp = route.params; 
 
     const [loading, setLoading] = React.useState(false);
     const [inputOTP, setInputOTP] = React.useState('');

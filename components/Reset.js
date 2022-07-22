@@ -8,12 +8,11 @@ import { Directus } from '@directus/sdk';
 import { Loading } from './Loading';
 import axios from 'axios';
 import i18n from 'i18n-js';
+import { directus, api_key, otpURL, otpSender } from '../constants';
 
 export default function Reset({navigation}){
     const [email, setEmail] = React.useState('esraa@cadimayouseeit.com');
     const [loading, setLoading] = React.useState(false);
-    const directus = new Directus('https://iw77uki0.directus.app');
-    const api_key = '0bd2d3933c1109a2cb73570a5035c4d44d15ec5df61310d4c40239ad45454097';
 
     const generateOTP = (length) => {
         const digits = '0123456789';
@@ -34,9 +33,9 @@ export default function Reset({navigation}){
                 const OTP = generateOTP(6);
                 await axios({
                     method: "POST",
-                    url: `https://api.mailslurp.com/sendEmail?apiKey=${api_key}`,
+                    url: otpURL,
                     data: {
-                        senderId: 'deeef50c-e076-4605-a1fd-abc2c6b823eb',
+                        senderId: otpSender,
                         to: email,
                         subject: i18n.t('verifyEmail'),
                         body: `${i18n.t('verifyEmailBody')} ${OTP}`,
@@ -44,7 +43,7 @@ export default function Reset({navigation}){
                 })
                 .then(() => {
                     setLoading(false);
-                    navigation.navigate('OTP', [res.data[0].id, OTP]);
+                    navigation.navigate('OTP', OTP);
                     //navigate to OTP screen
                 })
                 .catch((error) => {

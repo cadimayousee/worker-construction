@@ -1,22 +1,13 @@
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, TouchableWithoutFeedback, Keyboard, Image} from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
-import { Directus } from '@directus/sdk';
-import { Loading } from './Loading';
 import { GiftedChat } from 'react-native-gifted-chat'
-import profile from "../assets/profile.jpg";
-import { v1 as uuidv1 } from 'uuid';
 import i18n from 'i18n-js';
 import { firebase, fireDB } from '../firebase';
 import moment from 'moment';
-
-const directus = new Directus('https://iw77uki0.directus.app');
 
 export default function Chat({route}){
     const chat_id = route?.params.chat_id;
     const user_id = route?.params.user_id;
     const user_info = route?.params.user_info;
-    const constructor_id = route?.params.constructor_id;
 
     const [messages, setMessages] = React.useState();
     

@@ -8,11 +8,15 @@ import { Directus } from '@directus/sdk';
 import { Loading } from './Loading';
 import axios from 'axios';
 import i18n from 'i18n-js';
+import { directus } from '../constants';
+import { useSelector, useDispatch } from 'react-redux';
+import { addUser } from '../redux/actions';
 
 export default function ChangePassword ({navigation, route}){
-    const userData = route.params;
+    const storeState = useSelector(state => state.userReducer);
+    const userData = storeState.user;
+    const dispatch = useDispatch();
     const [loading, setLoading] = React.useState(false);
-    const directus = new Directus('https://iw77uki0.directus.app');
     const [pass, setPass] = React.useState('');
     const [confirmPass, setConfirmPass] = React.useState('');
 
@@ -23,13 +27,14 @@ export default function ChangePassword ({navigation, route}){
         }
         else{
             //patch
-            await directus.items('workers').updateOne(userData, {
+            await directus.items('workers').updateOne(userData.id, {
                 password: pass,
                 now_status: "online"
             })
             .then((res) =>{
+                dispatch(addUser(res));
                 setLoading(false);
-                navigation.navigate('Tabs', {id: userData});
+                navigation.navigate('Tabs');
             })
             .catch((err) => {
                 setLoading(false);

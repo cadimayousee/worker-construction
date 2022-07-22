@@ -5,9 +5,11 @@ import { Input, NativeBaseProvider, Icon, Box, AspectRatio, Button } from 'nativ
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Directus } from '@directus/sdk';
 import { Loading } from './Loading';
-// import messaging from '@react-native-firebase/messaging';
+import messaging from '@react-native-firebase/messaging';
 import i18n from 'i18n-js';
-
+import { directus } from '../constants';
+import { addUser } from '../redux/actions';
+import { useDispatch } from 'react-redux';
 
 export default function Login({navigation}) {
 
@@ -15,25 +17,23 @@ export default function Login({navigation}) {
     const [pass, setPass] = React.useState('12345');
     const [loading, setLoading] = React.useState(false);
     const [token, setToken] = React.useState('');
-    const directus = new Directus('https://iw77uki0.directus.app');
+    const dispatch = useDispatch();
 
-    // async function requestToken() {
-    //   const authStatus = await messaging().requestPermission();
-    //   const enabled =
-    //     authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-    //     authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-    //   if (enabled) {
-    //     console.log('Authorization status:', authStatus);
-    //   }
-    //   await messaging().getToken().then(async (token) => {
-    //     console.log("TOKEN " + token);
-    //     await messaging().subscribeToTopic('workers')
-    //     .then(() => { 
-    //       console.log('subscribed!');
-    //       return token;
-    //     })
-    //   })
-    // }
+    async function requestToken() {
+      const authStatus = await messaging().requestPermission();
+      const enabled =
+        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+      if (enabled) {
+        console.log('Authorization status:', authStatus);
+      }
+      await messaging().getToken().then(async (token) => {
+        setToken(token)
+        messaging().subscribeToTopic('workers').then(() =>{
+          return;
+        })
+      })
+    }
 
     async function login(){
       await directus.items('workers').readByQuery({
@@ -47,18 +47,19 @@ export default function Login({navigation}) {
           await directus.utils.hash.verify(pass, hash_password)
           .then(async (matches) => {
             if(matches == true){ //account valid
-               //patch
-                await directus.items('workers').updateOne(user_id, {
-                  now_status: "online",
-                  notification_token: token
-                })
-                .then((res) =>{
-                  setLoading(false);
-                  navigation.navigate('Tabs', {id: user_id});
-                })
-                .catch((err) => {
-                  alert(err.message);
-                });
+                //patch
+                 await directus.items('workers').updateOne(user_id, {
+                   now_status: "online",
+                   notification_token: token
+                 })
+                 .then((res) =>{
+                    dispatch(addUser(res));          
+                    setLoading(false);
+                    navigation.navigate('Tabs');
+                 })
+                 .catch((err) => {
+                   alert(err.message);
+                 });
             }
             else{ //incorrect password
               setLoading(false);
@@ -74,7 +75,7 @@ export default function Login({navigation}) {
     }
 
     React.useEffect(() => {
-      // requestToken().then((res) => setToken(res));
+      requestToken();
     },[]);
 
   return (

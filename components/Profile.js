@@ -9,10 +9,13 @@ import Toast from 'react-native-toast-message';
 import i18n from 'i18n-js';
 import { Directus } from '@directus/sdk';
 import { Loading } from './Loading';
+import { directus } from '../constants';
+import { useDispatch, useSelector } from 'react-redux';
+import { toastClick } from '../redux/actions';
 
-function Item({item, navigate, userData}) {
+function Item({item, navigate}) {
     return (
-        <TouchableOpacity style={styles.listItem} onPress={()=> item.name == i18n.t('settings') ? navigate('Settings',{userData}) : null}>
+        <TouchableOpacity style={styles.listItem} onPress={()=> item.name == i18n.t('settings') ? navigate('Settings') : null}>
             <Ionicons name={item.icon} size={32} />
             <Text style={styles.title}>{item.name}</Text>
         </TouchableOpacity>
@@ -20,39 +23,30 @@ function Item({item, navigate, userData}) {
   }
 
 export default function Profile({route, navigation}){
-  const width = Dimensions.get('screen').width;
-  const height = Dimensions.get('screen').height;
-  const directus = new Directus('https://iw77uki0.directus.app');
-  
-  const id = route.params;
-  const [userData, setUserData] = React.useState();
+  const toast = useSelector(state => state.toastReducer);
+  const storeState = useSelector(state => state.userReducer);
+  const userData = storeState.user;
   const [loading, setLoading] = React.useState(false);
+  const dispatch = useDispatch();
 
-  async function getData(){
-    await directus.items('workers').readOne(id.id)
-    .then(async(res) => {
-      if(Object.keys(res).length !== 0){ //got user 
-        setUserData(res);
-        setLoading(false);
-
-        //if any of the userdata isnt complete show toast
-        if(res?.mobile_number == 0){
-          Toast.show({
-            type: 'error',
-            text1: i18n.t('toastString')
-          });
-      }
-      }
-    })
-    .catch((error) => {
-      alert(error);
-    });
+  function handleNotification(){
+    dispatch(toastClick(false));
+    navigation.navigate('Tabs', {screen: 'My Jobs'})
   }
 
   React.useEffect(() => {
-    setLoading(true);
-    getData();
-  },[]);
+    handleNotification();
+  },[(toast.toastClick === true)]);
+  
+  React.useEffect(() => {
+    
+    if(userData?.mobile_number == 0){
+      Toast.show({
+        type: 'error',
+        text1: i18n.t('toastString')
+      });
+  }
+},[]);
 
     var rating;
     if(userData?.rating == 0 || userData?.users_rated == 0){ //not yet rated
@@ -67,11 +61,7 @@ export default function Profile({route, navigation}){
             {
                 name:i18n.t('settings'),
                 icon:"settings-outline"
-            },
-            // {
-            //   name:i18n.t('logout'),
-            //   icon:"exit-outline"
-            // },
+            }
         ]
     }
     
@@ -113,7 +103,7 @@ export default function Profile({route, navigation}){
               <FlatList
                   style={styles.flatList}
                   data={state.routes}
-                  renderItem={({ item }) => <Item  item={item} navigate={navigation.navigate} userData={id}/>}
+                  renderItem={({ item }) => <Item  item={item} navigate={navigation.navigate} />}
                   keyExtractor={item => item.name}
               />
         </View>

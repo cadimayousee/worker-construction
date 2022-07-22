@@ -4,8 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { Directus } from '@directus/sdk';
 import { Loading } from './Loading';
 import i18n from 'i18n-js';
+import messaging from '@react-native-firebase/messaging';
+import { directus } from '../constants';
+import { useSelector, useDispatch } from 'react-redux';
+import { addUser } from '../redux/actions';
 
-const directus = new Directus('https://iw77uki0.directus.app');
 
 function Item({item, setOldPassword, setNewPassword, setConfirmPassword}) {
     return (
@@ -25,11 +28,14 @@ function Item({item, setOldPassword, setNewPassword, setConfirmPassword}) {
 }
 
 export default function SettingsPassword({route,navigation}){
+    const storeState = useSelector(state => state.userReducer);
+    const userData = storeState.user;
     const id = route.params?.userData;
     const [loading, setLoading] = React.useState(false);
     const [oldPassword, setOldPassword] = React.useState('');
     const [newPassword, setNewPassword] = React.useState('');
     const [confirmPassword, setConfirmPassword] = React.useState('');
+    const dispatch = useDispatch();
 
     const state = {
         routes:[
@@ -51,15 +57,18 @@ export default function SettingsPassword({route,navigation}){
         ]
     }
 
-    async function logout(id){
+    async function logout(){
         //patch
-        await directus.items('workers').updateOne(id, {
+        await directus.items('workers').updateOne(userData.id, {
             now_status: "offline"
         })
         .then((res) =>{
-            setLoading(false);
-            alert(i18n.t('relogin'));
-            navigation.navigate('Login')
+            dispatch(addUser(res));
+            messaging().unsubscribeFromTopic('workers').then(() =>{
+                setLoading(false);
+                alert(i18n.t('relogin'));
+                navigation.navigate('Login')
+            })
         })
         .catch((err) => {
             alert(err.message);
@@ -85,7 +94,7 @@ export default function SettingsPassword({route,navigation}){
         }
 
         if(flag == false){
-            await directus.items('workers').readOne(id.id)
+            await directus.items('workers').readOne(userData.id)
             .then(async(res) => {
                 if(Object.keys(res).length !== 0){ //user is correct, verify old password
                 var hash_password = res.password;
@@ -93,11 +102,11 @@ export default function SettingsPassword({route,navigation}){
                 .then(async (matches) => {
                     if(matches == true){ //old password correct, change password
                         //patch
-                    await directus.items('workers').updateOne(id.id, {
+                    await directus.items('workers').updateOne(userData.id, {
                         password: newPassword
                     })
                     .then((res) =>{
-                       logout(id.id);
+                       logout();
                     })
                     .catch((err) => {
                         setLoading(false);

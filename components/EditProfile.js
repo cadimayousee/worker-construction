@@ -4,11 +4,25 @@ import i18n from 'i18n-js';
 import {Ionicons} from '@expo/vector-icons'; 
 import { Directus } from '@directus/sdk';
 import { Loading } from './Loading';
+import messaging from "@react-native-firebase/messaging";
 import axios from 'axios';
+import { directus } from '../constants';
+import { useSelector, useDispatch } from 'react-redux';
+import { addUser } from '../redux/actions';
 
-const directus = new Directus('https://iw77uki0.directus.app');
+export default function EditProfile({route,navigation}){
+    
+    const [loading, setLoading] = React.useState(false);
+    const storeState = useSelector(state => state.userReducer);
+    const userData = storeState.user;
+    const [firstName, setFirstName] = React.useState(userData?.first_name);
+    const [lastName, setLastName] = React.useState(userData?.last_name);
+    const [mobile, setMobile] = React.useState(userData?.mobile_number);
+    const [email, setEmail] = React.useState(userData?.email);
+    const [category, setCategory] = React.useState(userData?.category);
+    const dispatch = useDispatch();
 
-function Item({item, setFirstName, setLastName, setMobile, setEmail, setCategory}) {
+function Item({item}) {
     return (
         <View style={styles.listItem}>
             <Text style={styles.title}>{item.name + "   "}</Text>
@@ -36,12 +50,14 @@ function validate(text){
     }
   }      
 
-async function logout(userData, setLoading, navigation){
+async function logout(){
     //patch
     await directus.items('workers').updateOne(userData.id, {
         now_status: "offline"
     })
     .then((res) =>{
+        dispatch(addUser(res));
+        messaging().unsubscribeFromTopic('workers');
         setLoading(false);
         alert(i18n.t('relogin2'));
         navigation.navigate('Login')
@@ -51,7 +67,7 @@ async function logout(userData, setLoading, navigation){
     });
 }
 
-async function saveDetails(userData, firstName, lastName, mobile, email, category, setLoading, navigation){
+async function saveDetails(){
     setLoading(true);
     var flag = false;
 
@@ -91,7 +107,7 @@ async function saveDetails(userData, firstName, lastName, mobile, email, categor
             category: category
         })
         .then((res) =>{
-            logout(userData, setLoading, navigation);
+            logout();
         })
         .catch((err) => {
             setLoading(false);
@@ -99,41 +115,6 @@ async function saveDetails(userData, firstName, lastName, mobile, email, categor
         });
     }
 }
-
-export default function EditProfile({route,navigation}){
-  
-    const [loading, setLoading] = React.useState(false);
-    const [firstName, setFirstName] = React.useState(userData?.first_name);
-    const [lastName, setLastName] = React.useState(userData?.last_name);
-    const [mobile, setMobile] = React.useState(userData?.mobile_number);
-    const [email, setEmail] = React.useState(userData?.email);
-    const [category, setCategory] = React.useState(userData?.category);
-
-    const id = route.params?.userData;
-    const [userData, setUserData] = React.useState();
-
-    async function getData(){
-        await directus.items('workers').readOne(id.id)
-        .then(async(res) => {
-          if(Object.keys(res).length !== 0){ //got user 
-            setUserData(res);
-            setFirstName(res.first_name);
-            setLastName(res.last_name);
-            setEmail(res.email);
-            setMobile(res.mobile_number);
-            setCategory(res.category);
-            setLoading(false);
-          }
-        })
-        .catch((error) => {
-          alert(error);
-        });
-      }
-
-    React.useEffect(() => {
-        setLoading(true);
-        getData();
-    },[]);
 
     const state = {
         routes:[
@@ -181,12 +162,12 @@ export default function EditProfile({route,navigation}){
                   style={styles.flatList}
                   data={state.routes}
                   renderItem={({ item }) => 
-                  <Item  item={item} setFirstName={setFirstName} setLastName={setLastName} setMobile={setMobile} setEmail={setEmail} setCategory={setCategory}/>}
+                  <Item  item={item} />}
                   keyExtractor={item => item.name}
             /> 
 
             <View style={{marginBottom: 40}}>
-                <Button title={i18n.t('save')} onPress={() => saveDetails(userData,firstName, lastName, mobile, email, category, setLoading, navigation)} />
+                <Button title={i18n.t('save')} onPress={() => saveDetails()} />
             </View>
 
         </View>

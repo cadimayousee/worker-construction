@@ -3,14 +3,14 @@ import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, TouchableWithoutFeedback, Keyboard, Image, TextInput, Button as Button2} from 'react-native';
 import { Input, NativeBaseProvider, Button, Icon, Box, AspectRatio } from 'native-base';
 import { FontAwesome5, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-// import download from "../assets/download.jpg";
+import { directus } from '../constants';
 import { Directus } from '@directus/sdk';
 import request from '../request';
 import { Loading } from './Loading';
 import axios from 'axios';
 import * as Location  from 'expo-location'
 import i18n from 'i18n-js';
+import { addUser } from '../redux/actions';
 
 export default function Signup({navigation}) {
     const [firstName, setFirstName] = React.useState('');
@@ -20,9 +20,28 @@ export default function Signup({navigation}) {
     const [confirmPass, setConfirmPass] = React.useState('');
     const [categories, setCategories] = React.useState('');
     const [loading, setLoading] = React.useState(false);
+    const [token, setToken] = React.useState('');
+    const dispatch = useDispatch();
 
-    const directus = new Directus('https://iw77uki0.directus.app');
-    
+    async function requestToken() {
+      const authStatus = await messaging().requestPermission();
+      const enabled =
+        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+      if (enabled) {
+        console.log('Authorization status:', authStatus);
+      }
+      await messaging().getToken().then(async (token) => {
+        setToken(token)
+        messaging().subscribeToTopic('workers').then(() =>{
+          return;
+        })
+      })
+    }
+
+    React.useEffect(() => {
+      requestToken();
+    },[]);
 
     function validateFormat(text){
       let reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w\w+)+$/;
@@ -96,12 +115,13 @@ export default function Signup({navigation}) {
                 now_status: "online",
                 category: categories,
                 longitude: location.longitude,
-                latitude: location.latitude
-                // notification token
+                latitude: location.latitude,
+                notification_token : token
               })
               .then((res) => {
+                  dispatch(addUser(res));
                   setLoading(false);
-                  navigation.navigate('Tabs',{id: res.id});
+                  navigation.navigate('Tabs');
               });
             }
           });

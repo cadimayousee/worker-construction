@@ -8,20 +8,35 @@ import { Loading } from './Loading';
 import moment from 'moment';
 import i18n from 'i18n-js';
 import { fireDB } from '../firebase';
-
-const directus = new Directus('https://iw77uki0.directus.app');
+import { useSelector, useDispatch } from 'react-redux';
+import { toastClick } from '../redux/actions';
+import { directus, firebaseURL, yourServerKey } from '../constants';
+import axios from 'axios';
 
 export default function Jobs({route, navigation}){
     const [jobs, setJobs] = React.useState([]);
     const [loading, setLoading] = React.useState(false);
-    const id = route.params.id;
+    const storeState = useSelector(state => state.userReducer);
+    const toast = useSelector(state => state.toastReducer);
+    const userData = storeState.user;
+    const dispatch = useDispatch();
+    
+    async function handleNotification(){
+        if(toast.toastClick){ //toast was clicked
+            dispatch(toastClick(false))
+        }
+    }
+
+    React.useState(() => {
+        handleNotification();
+    },[]);
 
     async function getJobs(){
         await directus.items('jobs').readByQuery({filter : {now_status : {_in: ['completed' , 'in progress']}}})
         .then((res) => {    
             res.data.forEach((job) => {
                 var arr = [...job.workers];
-                if(arr.includes(id)){
+                if(arr.includes(userData.id)){
                     if(job.now_status == 'in progress'){
                         if(moment().isBefore(moment(job.accepted_time).add(3, 'minutes')))
                             job.can_decline = true;
@@ -95,13 +110,13 @@ export default function Jobs({route, navigation}){
         //see if an existing chat was created using firebase
         const chats = fireDB.collection('chats');
         var snapshot = chats.where('contractor', '==', contractor_id);
-        snapshot = await chats.where('worker', '==', id).get();
+        snapshot = await chats.where('worker', '==', userData.id).get();
         var chat_id;
 
         if (snapshot.empty) {//create chat document
 
             const contractor = contractor_id;
-            const worker = id;
+            const worker = userData.id;
             const messages = [];
 
             const new_chat = await fireDB.collection('chats').add({
@@ -119,11 +134,8 @@ export default function Jobs({route, navigation}){
             });
         }
 
-        await directus.items('workers').readOne(id)
-        .then((info) => {
-            setLoading(false);
-            navigation.navigate('Chat', {chat_id: chat_id, user_id: id, user_info: info, contractor_id: contractor_id});
-        })
+        setLoading(false);
+        navigation.navigate('Chat', {chat_id: chat_id, user_id: userData.id, user_info: userData});
 
     }
 
@@ -131,21 +143,21 @@ export default function Jobs({route, navigation}){
         await directus.items('users').readOne(job.contractor)
         .then((res) => {
             Alert.alert(
-                "Contact Contractor",
-                "You can follow up on the job details by contacting the contractor through phone number or through our chat",
+                i18n.t('contactAlert'),
+                i18n.t('contactDescription'),
                 [
                   {
-                    text: "Cancel",
+                    text: i18n.t('cancelAlert'),
                     style: "cancel",
                   },
                   {
-                    text: "Phone",
+                    text: i18n.t('phoneAlert'),
                     onPress: () => Linking.openURL(`tel:${res.mobile_number}`),
                     style: "default",
                   },
                   {
-                    text: "Chat",
-                    onPress: () => {openChat(res.id)},
+                    text: i18n.t('chatAlert'),
+                    onPress: () => openChat(res.id),
                     style: "default",
                   },
                 ],
@@ -156,24 +168,58 @@ export default function Jobs({route, navigation}){
         });
     }
 
+    async function notifyContractor(contractor){
+        await axios({
+            method: 'post',
+            url: firebaseURL,
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": ['key', yourServerKey].join('=')
+            },
+            data: {
+              to: contractor.notification_token,
+              notification: {
+                title: i18n.t('notificationTitle2'),
+                body: i18n.t('notificationBody2')
+              }
+            }
+        })
+    }
+
     async function declineJob(job){
         setLoading(true);
         var index = jobs.indexOf(job);
         var db_jobs = [...job.workers];
         var worker_index = db_jobs.indexOf(job.id);
         db_jobs.splice(worker_index, 1);
+        var request_body;
        if(job.workers.length == 1){ //1 or only worker who accepted
-        await directus.items('jobs').updateOne(job.id, {
-            now_status: 'created',
+            request_body = {
+                now_status: 'created',
+                number_of_workers: job.number_of_workers + 1,
+                workers: db_jobs
+            }
+        }
+       else{
+            request_body = {
             number_of_workers: job.number_of_workers + 1,
             workers: db_jobs
-        }).then(() => {
+        }
+       }
+        await directus.items('jobs').updateOne(job.id, request_body).then(() => {
             var updated_jobs = [...jobs];
             updated_jobs.splice(index, 1);
             setJobs(updated_jobs);
             setLoading(false);
+        }).then(() => {
+            await directus.items('users').readOne(job.contractor).then((contractor) => {
+                await directus.items('users').updateOne(job.contractor, {
+                    worked_hired : contractor.worked_hired - 1
+                })
+                //notify contractor
+                notifyContractor(contractor);
+            })
         })
-       }
     }
 
     return(
