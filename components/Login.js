@@ -13,8 +13,8 @@ import { useDispatch } from 'react-redux';
 
 export default function Login({navigation}) {
 
-    const [email, setEmail] = React.useState('esraa@cadimayouseeit.com');
-    const [pass, setPass] = React.useState('12345');
+    const [email, setEmail] = React.useState('esraa@email.com');
+    const [pass, setPass] = React.useState('123456');
     const [loading, setLoading] = React.useState(false);
     const [token, setToken] = React.useState('');
     const dispatch = useDispatch();

@@ -9,20 +9,18 @@ import { directus } from '../constants';
 import { addUser } from '../redux/actions';
 
 async function logout(userData, navigate){
-    const dispatch = useDispatch();
     //patch
     await directus.items('workers').updateOne(userData.id, {
         now_status: "offline"
     })
     .then((res) =>{
-        dispatch(addUser(res));
         messaging().unsubscribeFromTopic('workers').then(() => {
             navigate('Login')
         })
     })
     .catch((err) => {
         alert(err.message);
-    });
+    });   
 }
 
 function options(name, navigate, userData){

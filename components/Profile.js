@@ -27,7 +27,25 @@ export default function Profile({route, navigation}){
   const storeState = useSelector(state => state.userReducer);
   const userData = storeState.user;
   const [loading, setLoading] = React.useState(false);
+  const [completed, setCompleted] = React.useState(0);
+  const [inProgress, setInProgress] = React.useState(0);
   const dispatch = useDispatch();
+
+  async function setJobs(){
+    var completed = 0;
+    var inProgess = 0;
+    await directus.items('jobs').readByQuery({filter: {now_status : {"_in" : ['in progress' , 'completed']}}}).then((res) => {
+      res.data.forEach((job) => {
+        if(job.workers.includes(userData.id) && job.now_status == 'in progress')
+          inProgess += 1;
+
+        if(job.workers.includes(userData.id) && job.now_status == 'completed')
+          completed += 1; 
+      })
+    })
+    setInProgress(inProgess);
+    setCompleted(completed);
+  }
 
   function handleNotification(){
     dispatch(toastClick(false));
@@ -35,8 +53,9 @@ export default function Profile({route, navigation}){
   }
 
   React.useEffect(() => {
-    handleNotification();
-  },[(toast.toastClick === true)]);
+    if(toast.toastClick)
+      handleNotification();
+  },[(toast.toastClick)]);
   
   React.useEffect(() => {
     
@@ -45,15 +64,18 @@ export default function Profile({route, navigation}){
         type: 'error',
         text1: i18n.t('toastString')
       });
-  }
+    }
+
+    setJobs()
+
 },[]);
 
     var rating;
-    if(userData?.rating == 0 || userData?.users_rated == 0){ //not yet rated
+    if(userData?.rating == 0 || userData?.contractors_rated == 0){ //not yet rated
       rating = i18n.t('notRated');
     }
     else{
-      rating = Math.round(userData?.rating/userData?.users_rated) + " ✭";
+      rating = Math.round(userData?.rating) + " ✭";
     }
 
     const state = {
@@ -80,14 +102,14 @@ export default function Profile({route, navigation}){
               <View style = {styles.profileCategories}>
 
                     <View style={{alignItems:'center'}}>
-                        <Text style={styles.number_text}>0</Text>
+                        <Text style={styles.number_text}>{completed}</Text>
                         <Text style={styles.email_text}>{i18n.t('jobsDone')}</Text>
                     </View>
 
                     <View style={styles.sidebarDivider} />
 
                     <View style={{alignItems:'center'}}>
-                        <Text style={styles.number_text}>0</Text>
+                        <Text style={styles.number_text}>{inProgress}</Text>
                         <Text style={styles.email_text}>{i18n.t('jobsInProgress')}</Text>
                     </View>
 

@@ -87,6 +87,18 @@ const en = {
     notificationBody: "Check it out",
     notificationTitle2: "Recently accepted worker declined job",
     notificationBody2: "We'll keep looking!",
+    confirmPayment: "CONFIRM PAYMENT",
+    rateContractor: "RATE CONTRACTOR",
+    ratingModal: "Rating Contractor:",
+    submit: "Submit",
+    ratingSubmitted: "Rating submitted, thank you",
+    viewContractor: "VIEW CONTRACTOR",
+    contractorInfo: "Contractor Info:",
+    contractorName: "Name:",
+    contractorRating: "Rating:",
+    contactContractor: "Contact Contractor At: ",
+    contractorEmail: "Email:",
+    contractorPhone: "Phone Number:",
 }
 
 const localized_strings = {

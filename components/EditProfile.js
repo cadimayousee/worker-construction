@@ -7,24 +7,14 @@ import { Loading } from './Loading';
 import messaging from "@react-native-firebase/messaging";
 import axios from 'axios';
 import { directus } from '../constants';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector, useDispatch, shallowEqual } from 'react-redux';
 import { addUser } from '../redux/actions';
 
-export default function EditProfile({route,navigation}){
-    
-    const [loading, setLoading] = React.useState(false);
-    const storeState = useSelector(state => state.userReducer);
-    const userData = storeState.user;
-    const [firstName, setFirstName] = React.useState(userData?.first_name);
-    const [lastName, setLastName] = React.useState(userData?.last_name);
-    const [mobile, setMobile] = React.useState(userData?.mobile_number);
-    const [email, setEmail] = React.useState(userData?.email);
-    const [category, setCategory] = React.useState(userData?.category);
-    const dispatch = useDispatch();
 
-function Item({item}) {
+function Item({item, setFirstName, setLastName, setMobile, setCategory, setEmail}) {
+
     return (
-        <View style={styles.listItem}>
+        <View style={styles.listItem} key={item.id}>
             <Text style={styles.title}>{item.name + "   "}</Text>
             <TextInput 
             style={styles.textInput}
@@ -67,7 +57,7 @@ async function logout(){
     });
 }
 
-async function saveDetails(){
+async function saveDetails(userData, firstName, lastName, mobile, category, email, setLoading, dispatch){
     setLoading(true);
     var flag = false;
 
@@ -107,7 +97,9 @@ async function saveDetails(){
             category: category
         })
         .then((res) =>{
-            logout();
+            // logout();
+            dispatch(addUser(res));
+            setLoading(false);
         })
         .catch((err) => {
             setLoading(false);
@@ -115,6 +107,18 @@ async function saveDetails(){
         });
     }
 }
+
+export default function EditProfile({route,navigation}){
+    
+    const [loading, setLoading] = React.useState(false);
+    const storeState = useSelector(state => state.userReducer, shallowEqual);
+    const userData = storeState.user;
+    const [firstName, setFirstName] = React.useState(userData?.first_name);
+    const [lastName, setLastName] = React.useState(userData?.last_name);
+    const [mobile, setMobile] = React.useState(userData?.mobile_number);
+    const [email, setEmail] = React.useState(userData?.email);
+    const [category, setCategory] = React.useState(userData?.category);
+    const dispatch = useDispatch();
 
     const state = {
         routes:[
@@ -159,15 +163,16 @@ async function saveDetails(){
             <View style = {[styles.line, {marginTop: 20}]} />
 
             <FlatList
+                keyboardShouldPersistTaps="handled"
                   style={styles.flatList}
                   data={state.routes}
                   renderItem={({ item }) => 
-                  <Item  item={item} />}
+                  <Item  item={item} setFirstName={setFirstName} setLastName={setLastName} setMobile={setMobile} setCategory={setCategory} setEmail = {setEmail}/>}
                   keyExtractor={item => item.name}
             /> 
 
             <View style={{marginBottom: 40}}>
-                <Button title={i18n.t('save')} onPress={() => saveDetails()} />
+                <Button title={i18n.t('save')} onPress={() => saveDetails(userData, firstName, lastName, mobile, category, email, setLoading, dispatch)} />
             </View>
 
         </View>

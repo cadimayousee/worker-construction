@@ -10,7 +10,9 @@ import { Loading } from './Loading';
 import axios from 'axios';
 import * as Location  from 'expo-location'
 import i18n from 'i18n-js';
+import messaging from "@react-native-firebase/messaging";
 import { addUser } from '../redux/actions';
+import { useDispatch } from 'react-redux';
 
 export default function Signup({navigation}) {
     const [firstName, setFirstName] = React.useState('');

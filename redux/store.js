@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { persistStore, persistReducer } from 'redux-persist';
 import userReducer from './userReducer';
 import toastReducer from './toastReducer';
+import ratedReducer from './ratedReducer';
 
 const persistConfig = {
     key: 'root',
@@ -14,7 +15,8 @@ const persistConfig = {
 
 const rootReducer = combineReducers({
     userReducer: persistReducer(persistConfig, userReducer),
-    toastReducer: persistReducer(persistConfig, toastReducer)
+    toastReducer: persistReducer(persistConfig, toastReducer),
+    ratedReducer: persistReducer(persistConfig, ratedReducer)
   });
   
 export const store = createStore(rootReducer, applyMiddleware(thunk));

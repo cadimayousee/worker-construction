@@ -3,7 +3,7 @@ import * as React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, TouchableWithoutFeedback, Keyboard, Image, ScrollView, Alert, Linking} from 'react-native';
 import { Card, ListItem, Button, Icon } from 'react-native-elements'
 import { useFocusEffect } from '@react-navigation/native';
-import { Directus } from '@directus/sdk';
+import { Ionicons } from '@expo/vector-icons'; 
 import { Loading } from './Loading';
 import moment from 'moment';
 import i18n from 'i18n-js';
@@ -11,7 +11,9 @@ import { fireDB } from '../firebase';
 import { useSelector, useDispatch } from 'react-redux';
 import { toastClick } from '../redux/actions';
 import { directus, firebaseURL, yourServerKey } from '../constants';
+import { Overlay } from 'react-native-elements';
 import axios from 'axios';
+import { rated } from '../redux/actions';
 
 export default function Jobs({route, navigation}){
     const [jobs, setJobs] = React.useState([]);
@@ -19,7 +21,30 @@ export default function Jobs({route, navigation}){
     const storeState = useSelector(state => state.userReducer);
     const toast = useSelector(state => state.toastReducer);
     const userData = storeState.user;
+    const ratedState = useSelector(state => state.ratedReducer);
+    const redux_rated = ratedState.rated;
     const dispatch = useDispatch();
+
+    //rate data
+    const [rateOverlay, setRateOverlay] = React.useState(false);
+    const [infoOverlay, setInfoOverlay] = React.useState(false);
+    const [contractorData, setContractorData] = React.useState({id: 0, name: 'default'});
+    const [defaultRating, setDefaultRating] = React.useState(0);
+    const [maxRating, setMaxRating] = React.useState([1, 2, 3, 4, 5]);
+    // Filled Star
+    const starImageFilled =
+    'https://raw.githubusercontent.com/AboutReact/sampleresource/master/star_filled.png';
+    // Empty Star
+    const starImageCorner =
+    'https://raw.githubusercontent.com/AboutReact/sampleresource/master/star_corner.png';
+
+    const toggleOverlay = () => {
+        setRateOverlay(!rateOverlay);
+    }
+
+    const toggleOverlay_1 = () => {
+        setInfoOverlay(!infoOverlay);
+    }
     
     async function handleNotification(){
         if(toast.toastClick){ //toast was clicked
@@ -32,22 +57,20 @@ export default function Jobs({route, navigation}){
     },[]);
 
     async function getJobs(){
-        await directus.items('jobs').readByQuery({filter : {now_status : {_in: ['completed' , 'in progress']}}})
-        .then((res) => {    
-            res.data.forEach((job) => {
-                var arr = [...job.workers];
-                if(arr.includes(userData.id)){
-                    if(job.now_status == 'in progress'){
+        await directus.items('jobs').readByQuery({limit: -1})
+        .then((res) => {  
+            var arr = res.data.filter((job) => job.workers.includes(userData.id)); 
+            arr.forEach((job) => {
+                    if(job.now_status == 'in progress' || job.now_status == 'hiring'){
                         if(moment().isBefore(moment(job.accepted_time).add(3, 'minutes')))
                             job.can_decline = true;
                     }
                     else{ //completed
                         job.can_decline = false;
                     }
-                }
             })
-            res.data.sort((a, b) => a.now_status > b.now_status ? -1 : a.now_status < b.now_status ? 1 : 0);
-            setJobs(res.data);
+            arr.sort((a, b) => a.now_status > b.now_status ? -1 : a.now_status < b.now_status ? 1 : 0);
+            setJobs(arr);
         })
         .catch((err) => {
             alert(err);
@@ -65,7 +88,7 @@ export default function Jobs({route, navigation}){
         const timer = setInterval(() => {
         let data = [...jobs];
         data.forEach((job) => {
-            if(job.now_status == 'in progress' && !moment().isBefore(moment(job.accepted_time).add(3, 'minutes')))
+            if((job.now_status == 'in progress' || job.now_status == 'hiring') && !moment().isBefore(moment(job.accepted_time).add(3, 'minutes')))
                 job.can_decline = false;
           })
           data.sort((a, b) => a.now_status > b.now_status ? -1 : a.now_status < b.now_status ? 1 : 0);
@@ -211,8 +234,8 @@ export default function Jobs({route, navigation}){
             updated_jobs.splice(index, 1);
             setJobs(updated_jobs);
             setLoading(false);
-        }).then(() => {
-            await directus.items('users').readOne(job.contractor).then((contractor) => {
+        }).then(async () => {
+            await directus.items('users').readOne(job.contractor).then(async (contractor) => {
                 await directus.items('users').updateOne(job.contractor, {
                     worked_hired : contractor.worked_hired - 1
                 })
@@ -222,9 +245,125 @@ export default function Jobs({route, navigation}){
         })
     }
 
+    async function ratingContractor(contractor){
+        setLoading(true);
+        await directus.items('users').readOne(contractor).then((res) => {
+            var object_data = {
+                id: res.id,
+                name: res.first_name + " " + res.last_name
+            };
+           setContractorData(object_data);
+           setLoading(false);
+           toggleOverlay();
+        })
+    }
+
+    async function submitRating(){
+        setLoading(true);
+        await directus.items('users').readOne(contractorData.id).then(async (res) => {
+            var db_rating = res.rating;
+            db_rating += defaultRating;
+            db_rating = db_rating / (res.users_rated + 1);
+            await directus.items('users').updateOne(contractorData.id, {
+                users_rated : res.users_rated + 1,
+                rating: db_rating
+            })
+        })
+        setLoading(false);
+        dispatch(rated(true)); //rated
+        toggleOverlay();
+        alert(i18n.t('ratingSubmitted'));
+    }
+
+    async function viewContractor(contractor){
+        await directus.items('users').readOne(contractor).then((res) => {
+            setContractorData(res);
+            toggleOverlay_1();
+        })
+    }
+
     return(
         <View style={styles.container}>
             {loading && <Loading />}
+
+        <Overlay
+         overlayStyle={{ borderRadius: 5 }}
+         supportedOrientations={['portrait', 'landscape']}
+         isVisible={rateOverlay}
+         onBackdropPress={toggleOverlay}>
+           
+           <View style={styles.mainView}>
+            <Text>{i18n.t('ratingModal')}</Text>
+
+                <View style={styles.customRatingBarStyle}>
+                    <Text>{contractorData.name}</Text>
+                    <View style={styles.customRatingBarStyle_1}>
+                    {maxRating.map((item) => {
+                        return (
+                            <TouchableOpacity
+                            activeOpacity={0.7}
+                            key={item}
+                            onPress={() => {setDefaultRating(item)}}>
+                                <Image
+                                style={styles.starImageStyle}
+                                    source={
+                                    item <= defaultRating
+                                        ? { uri: starImageFilled }
+                                        : { uri: starImageCorner }
+                                    }
+                                />
+                                </TouchableOpacity>
+                            );
+                        })}
+                        </View>
+                </View>     
+                <Button
+                    buttonStyle={styles.submitButton}
+                    title={i18n.t('submit')}
+                    onPress={() => submitRating()} 
+                />   
+
+            </View>
+        </Overlay>
+        
+        <Overlay 
+        overlayStyle={styles.overlay}
+        supportedOrientations={['portrait', 'landscape']}
+        isVisible={infoOverlay} 
+        onBackdropPress={toggleOverlay_1}>
+
+            <View style={styles.titleHeader}>
+                <Ionicons name='information-circle-outline' size={27} color='grey'/>
+                <Text style={styles.title}>{i18n.t('contractorInfo')}</Text>
+            </View>
+
+            <View style={styles.titleHeader}>
+                <Text style={styles.megatitle}>{i18n.t('contractorName')}</Text>
+                <Text style={styles.subtitle}>{contractorData.first_name + " " + contractorData.last_name}</Text>
+            </View>
+
+            <View style={styles.titleHeader}>
+                <Text style={styles.megatitle}>{i18n.t('contractorRating')}</Text>
+                <Text style={styles.subtitle}>{contractorData.rating == 0? 'No Rating' : Math.round(contractorData.rating) + "✭"}</Text>
+            </View>
+
+            <View style={styles.titleHeader}>
+                <Ionicons name='call-outline' size={27} color='grey'/>
+                <Text style={styles.title}>{i18n.t('contactContractor')}</Text>
+            </View>
+
+            <View style={styles.titleHeader}>
+                <Text style={styles.megatitle}>{i18n.t('contractorEmail')}</Text>
+                <Text style={styles.subtitle}>{contractorData.email}</Text>
+            </View>
+
+            <View style={styles.titleHeader}>
+                <Text style={styles.megatitle}>{i18n.t('contractorPhone')}</Text>
+                <Text style={styles.subtitle}>{contractorData.mobile_number}</Text>
+            </View>
+
+        </Overlay>
+
 
         <ScrollView>
             
@@ -280,11 +419,13 @@ export default function Jobs({route, navigation}){
                         </Text>
                     </Text>
 
+                    {job.now_status == 'in progress' || (job.now_status == 'hiring' && job.workers.length > 0)?
                     <Button
                         buttonStyle={styles.viewButton}
                         title={i18n.t('contact')}
                         onPress={() => contact(job)}
-                        />
+                        />: null}
+
                     {job.can_decline == true? 
                     <Button
                         buttonStyle={styles.declineButton}
@@ -292,6 +433,30 @@ export default function Jobs({route, navigation}){
                         onPress={() => declineJob(job)}
                         />
                      : null} 
+
+                    {job.now_status == "completed"? 
+                    <Button
+                        buttonStyle={styles.endButtons}
+                        title={i18n.t('confirmPayment')}
+                        onPress={() =>{}}
+                        />
+                     : null} 
+
+                    {job.now_status == "completed"? 
+                    <Button
+                        disabled={redux_rated}
+                        buttonStyle={styles.endButtons}
+                        title={i18n.t('rateContractor')}
+                        onPress={() => {ratingContractor(job.contractor)}}
+                        />
+                     : null} 
+
+                    <Button
+                        buttonStyle={styles.viewButton}
+                        title={i18n.t('viewContractor')}
+                        onPress={() => {viewContractor(job.contractor)}}
+                        />
+
                     </Card>
                 )
             })}
@@ -334,5 +499,52 @@ export const styles = StyleSheet.create({
     declineButton:{
         marginTop: 5, 
         backgroundColor: 'red'
-    }
+    },
+    endButtons:{
+        marginTop: 5, 
+        backgroundColor: '#e8c56d'
+    },
+    customRatingBarStyle: {
+        justifyContent: 'center',
+        flexDirection: 'column',
+        alignItems: 'center', 
+    },
+    customRatingBarStyle_1: {
+        justifyContent: 'center',
+        flexDirection: 'row',
+        alignItems: 'center'
+    },
+    starImageStyle: {
+        width: 25,
+        height: 25,
+        resizeMode: 'cover',
+    },
+    mainView:{
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        alignSelf: 'flex-start',
+    },
+    submitButton:{
+        marginTop: 10 
+    },
+    overlay:{
+        borderRadius: 5,
+    },
+    title:{
+        fontSize:18,
+        marginLeft:20,
+        color: 'grey'
+    },
+    subtitle:{
+        fontSize:16,
+        marginLeft:20
+    },
+    megatitle:{
+        fontSize: 16,
+        fontWeight: 'bold'
+    },
+    titleHeader:{
+        flexDirection: 'row',
+        alignItems: 'center'
+    },
 });
