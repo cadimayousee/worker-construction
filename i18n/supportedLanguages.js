@@ -63,7 +63,7 @@ const en = {
     enter: 'Enter',
     toast3String: 'Email Address Verified!',
     userExists: "A User with this email address exists!",
-    relogin2: "User Details Updated! Please re login to refresh data",
+    relogin2: "Password Updated! Please re login to refresh data",
     jobsDone: "Jobs Completed",
     jobsInProgress: "Jobs In Progress",
     jobTitle: "Title: ",
@@ -99,6 +99,12 @@ const en = {
     contactContractor: "Contact Contractor At: ",
     contractorEmail: "Email:",
     contractorPhone: "Phone Number:",
+    paymentAlert: "Amount paid by contractor: ",
+    paymentAlert2: "Click confirm to verify receival or report if you have not collected the mentioned amount",
+    confirmButton: "Confirm",
+    reportButton: "Report",
+    paymentConfirmed: "Payment Confirmed. Thank you!",
+    viewChats: "View Chats"
 }
 
 const localized_strings = {

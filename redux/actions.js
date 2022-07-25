@@ -2,7 +2,9 @@ export const ADD_USER = 'ADD_USER';
 
 export const TOAST_CLICK = 'TOAST_CLICK';
 
-export const RATED= 'RATED';
+export const RATED = 'RATED';
+
+export const CONFIRM_PAYMENT = 'CONFIRM_PAYMENT';
 
 export const addUser = user => dispatch => {
     dispatch({
@@ -21,6 +23,13 @@ export const toastClick = flag => dispatch => {
 export const rated = flag => dispatch => {
   dispatch({
     type: RATED,
+    payload: flag
+  });
+};
+
+export const confirmPayment = flag => dispatch => {
+  dispatch({
+    type: CONFIRM_PAYMENT,
     payload: flag
   });
 };

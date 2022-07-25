@@ -3,7 +3,7 @@ import { View , Text , Platform, StyleSheet, Dimensions, FlatList, TouchableOpac
 import i18n from 'i18n-js';
 import {Ionicons} from '@expo/vector-icons'; 
 import { Directus } from '@directus/sdk';
-import messaging from '@react-native-firebase/messaging';
+// import messaging from '@react-native-firebase/messaging';
 import { useSelector, useDispatch} from 'react-redux';
 import { directus } from '../constants';
 import { addUser } from '../redux/actions';

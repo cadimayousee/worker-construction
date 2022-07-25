@@ -10,7 +10,7 @@ import { Loading } from './Loading';
 import axios from 'axios';
 import * as Location  from 'expo-location'
 import i18n from 'i18n-js';
-import messaging from "@react-native-firebase/messaging";
+// import messaging from "@react-native-firebase/messaging";
 import { addUser } from '../redux/actions';
 import { useDispatch } from 'react-redux';
 
@@ -25,24 +25,24 @@ export default function Signup({navigation}) {
     const [token, setToken] = React.useState('');
     const dispatch = useDispatch();
 
-    async function requestToken() {
-      const authStatus = await messaging().requestPermission();
-      const enabled =
-        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-      if (enabled) {
-        console.log('Authorization status:', authStatus);
-      }
-      await messaging().getToken().then(async (token) => {
-        setToken(token)
-        messaging().subscribeToTopic('workers').then(() =>{
-          return;
-        })
-      })
-    }
+    // async function requestToken() {
+    //   const authStatus = await messaging().requestPermission();
+    //   const enabled =
+    //     authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+    //     authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+    //   if (enabled) {
+    //     console.log('Authorization status:', authStatus);
+    //   }
+    //   await messaging().getToken().then(async (token) => {
+    //     setToken(token)
+    //     messaging().subscribeToTopic('workers').then(() =>{
+    //       return;
+    //     })
+    //   })
+    // }
 
     React.useEffect(() => {
-      requestToken();
+      // requestToken();
     },[]);
 
     function validateFormat(text){

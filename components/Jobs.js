@@ -9,8 +9,8 @@ import moment from 'moment';
 import i18n from 'i18n-js';
 import { fireDB } from '../firebase';
 import { useSelector, useDispatch } from 'react-redux';
-import { toastClick } from '../redux/actions';
-import { directus, firebaseURL, yourServerKey } from '../constants';
+import { toastClick, confirmPayment } from '../redux/actions';
+import { directus, firebaseURL, yourServerKey, starImageFilled, starImageCorner } from '../constants';
 import { Overlay } from 'react-native-elements';
 import axios from 'axios';
 import { rated } from '../redux/actions';
@@ -23,6 +23,7 @@ export default function Jobs({route, navigation}){
     const userData = storeState.user;
     const ratedState = useSelector(state => state.ratedReducer);
     const redux_rated = ratedState.rated;
+    const confirmedState = useSelector(state => state.paymentReducer);
     const dispatch = useDispatch();
 
     //rate data
@@ -31,12 +32,6 @@ export default function Jobs({route, navigation}){
     const [contractorData, setContractorData] = React.useState({id: 0, name: 'default'});
     const [defaultRating, setDefaultRating] = React.useState(0);
     const [maxRating, setMaxRating] = React.useState([1, 2, 3, 4, 5]);
-    // Filled Star
-    const starImageFilled =
-    'https://raw.githubusercontent.com/AboutReact/sampleresource/master/star_filled.png';
-    // Empty Star
-    const starImageCorner =
-    'https://raw.githubusercontent.com/AboutReact/sampleresource/master/star_corner.png';
 
     const toggleOverlay = () => {
         setRateOverlay(!rateOverlay);
@@ -141,11 +136,25 @@ export default function Jobs({route, navigation}){
             const contractor = contractor_id;
             const worker = userData.id;
             const messages = [];
+            const worker_fn = userData.first_name;
+            const worker_ln = userData.last_name;
+
+            var contractor_info;
+            await directus.items('users').readOne(contractor_id).then((res) => {
+                contractor_info = res;
+            })
+
+            const contractor_fn = contractor_info.first_name;
+            const contractor_ln = contractor_info.last_name;
 
             const new_chat = await fireDB.collection('chats').add({
                 messages,
                 contractor,
-                worker
+                worker,
+                contractor_fn,
+                contractor_ln,
+                worker_fn,
+                worker_ln
             });
 
             chat_id = new_chat.id;
@@ -279,6 +288,47 @@ export default function Jobs({route, navigation}){
         await directus.items('users').readOne(contractor).then((res) => {
             setContractorData(res);
             toggleOverlay_1();
+        })
+    }
+
+    function confirmed(){
+        dispatch(confirmPayment(true));
+        alert(i18n.t('paymentConfirmed'))
+    }
+
+    async function confirmPay(id){
+        setLoading(true);
+        await directus.items('jobs').readOne(id).then((res) => {
+            setLoading(false);
+            var amount = res.pay_amount;
+            var type = res.pay_time;
+            var total_amount = 0;
+            if(type == 'rate per hour'){
+                var hours = res.number_of_hours;
+                total_amount = Math.round(parseInt(hours) * parseInt(amount));
+            }
+            else{
+                total_amount = parseInt(amount);
+            }
+            var text = total_amount + " dhs" + "\n" + i18n.t('paymentAlert2');
+            Alert.alert(
+                i18n.t('paymentAlert'),
+                text,
+                [
+                    {
+                        text: i18n.t('confirmButton'),
+                        style: "default",
+                        onPress: () => confirmed()
+                    },
+                    {
+                        text: i18n.t('reportButton'),
+                        style: "destructive",
+                    }
+                ],
+                {
+                    cancelable: true,
+                }
+            )
         })
     }
 
@@ -434,11 +484,12 @@ export default function Jobs({route, navigation}){
                         />
                      : null} 
 
-                    {job.now_status == "completed"? 
+                    {job.now_status == "completed" ? 
                     <Button
+                        disabled={confirmedState.confirmPayment} //did no confirm payment
                         buttonStyle={styles.endButtons}
                         title={i18n.t('confirmPayment')}
-                        onPress={() =>{}}
+                        onPress={() =>{confirmPay(job.id)}}
                         />
                      : null} 
 
@@ -450,12 +501,13 @@ export default function Jobs({route, navigation}){
                         onPress={() => {ratingContractor(job.contractor)}}
                         />
                      : null} 
-
+                    
+                    {job.now_status == 'in progress' || (job.now_status == 'hiring' && job.workers.length > 0) || job.now_status == 'completed'?
                     <Button
                         buttonStyle={styles.viewButton}
                         title={i18n.t('viewContractor')}
                         onPress={() => {viewContractor(job.contractor)}}
-                        />
+                    /> : null}
 
                     </Card>
                 )

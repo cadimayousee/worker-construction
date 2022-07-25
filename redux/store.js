@@ -5,6 +5,7 @@ import { persistStore, persistReducer } from 'redux-persist';
 import userReducer from './userReducer';
 import toastReducer from './toastReducer';
 import ratedReducer from './ratedReducer';
+import paymentReducer from './paymentReducer';
 
 const persistConfig = {
     key: 'root',
@@ -16,7 +17,8 @@ const persistConfig = {
 const rootReducer = combineReducers({
     userReducer: persistReducer(persistConfig, userReducer),
     toastReducer: persistReducer(persistConfig, toastReducer),
-    ratedReducer: persistReducer(persistConfig, ratedReducer)
+    ratedReducer: persistReducer(persistConfig, ratedReducer),
+    paymentReducer: persistReducer(persistConfig, paymentReducer)
   });
   
 export const store = createStore(rootReducer, applyMiddleware(thunk));

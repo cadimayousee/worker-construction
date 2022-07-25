@@ -5,11 +5,13 @@ import {
   import 'localstorage-polyfill';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import messaging from '@react-native-firebase/messaging';
-import { useDispatch } from 'react-redux';
+import * as Location  from 'expo-location';
+// import messaging from '@react-native-firebase/messaging';
+import { useDispatch, useSelector } from 'react-redux';
 import { toastClick } from '../redux/actions';
 import i18n from 'i18n-js';
 import Toast from 'react-native-toast-message';
+import { directus } from '../constants';
 import * as React from 'react';
 const Stack = createNativeStackNavigator();
 const Tab = createMaterialTopTabNavigator();
@@ -27,6 +29,7 @@ import SettingsPassword from '../components/SettingsPassword';
 import Jobs from '../components/Jobs';
 import IncomingJobs from '../components/IncomingJobs';
 import Chat from '../components/Chat';
+import Chats from '../components/Chats';
 
 
 export default function Navigation(){
@@ -38,7 +41,6 @@ export default function Navigation(){
 }
 
 function MyTab({route}) {
-    //location update
   
     return (
       <Tab.Navigator
@@ -46,6 +48,7 @@ function MyTab({route}) {
       screenOptions={{headerShown: false}}>
         
           <Tab.Screen name="My Profile" component={Profile} />
+          <Tab.Screen name="My Chats" component={Chats} />
           <Tab.Screen name="My Jobs" component={Jobs} />
           <Tab.Screen name="Incoming Jobs" component={IncomingJobs} />
   
@@ -57,34 +60,69 @@ function RootNavigtor(){
 
     const dispatch = useDispatch();
     const [loading, setLoading] = React.useState(false);
+    const storeState = useSelector(state => state.userReducer);
+    const userData = storeState.user;
+    const [region, setRegion] = React.useState();
 
     async function handleNotification(){
         dispatch(toastClick(true));
         Toast.hide();
     }
 
-    messaging().setBackgroundMessageHandler(async (remoteMessage) => {
-        handleNotification()
-    });
-        
-    messaging().getInitialNotification(async (remoteMessage) => {
-    });
+    async function getLocationAsync(){
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if(status !== 'granted'){
+        alert(i18n.t('noPermission'));
+          return;
+      }
+      let location = await Location.getCurrentPositionAsync({accuracy : Location.Accuracy.Lowest});
+      let current_region = {
+        longitude : location.coords.longitude,
+        latitude: location.coords.latitude,
+      }
 
-    React.useEffect(() => {
-        messaging().onMessage(async remoteMessage => {
-          Toast.show({
-            type: 'success',
-            text1: remoteMessage.notification.title,
-            text2: remoteMessage.notification.body,
-            onPress: () => {console.log("clicked"), handleNotification()}
-          })
-        });
-    
-        messaging().onNotificationOpenedApp(async (remoteMessage) => {
-          handleNotification()
-        });
-    
+      if(JSON.stringify(current_region) !== JSON.stringify(region) && Object.keys(userData).length > 0){ //change in db
+        await directus.items('workers').updateOne(userData.id, {
+          longitude: current_region.longitude,
+          latitude: current_region.latitude
+        }).then(() => {
+          setRegion(current_region);
+        })
+      }
+    }
+
+    React.useState(() => {
+      const interval = setInterval(() => {
+          getLocationAsync();
+      },5000); //5 seconds update
+      return(() => {
+        clearInterval(interval)
+    })
     },[]);
+    
+
+    // messaging().setBackgroundMessageHandler(async (remoteMessage) => {
+    //     handleNotification()
+    // });
+        
+    // messaging().getInitialNotification(async (remoteMessage) => {
+    // });
+
+    // React.useEffect(() => {
+    //     messaging().onMessage(async remoteMessage => {
+    //       Toast.show({
+    //         type: 'success',
+    //         text1: remoteMessage.notification.title,
+    //         text2: remoteMessage.notification.body,
+    //         onPress: () => {console.log("clicked"), handleNotification()}
+    //       })
+    //     });
+    
+    //     messaging().onNotificationOpenedApp(async (remoteMessage) => {
+    //       handleNotification()
+    //     });
+    
+    // },[]);
 
     return(
       <Stack.Navigator screenOptions={{ headerShown: false }}>

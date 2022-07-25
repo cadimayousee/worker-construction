@@ -5,7 +5,8 @@ import { Input, NativeBaseProvider, Icon, Box, AspectRatio, Button } from 'nativ
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Directus } from '@directus/sdk';
 import { Loading } from './Loading';
-import messaging from '@react-native-firebase/messaging';
+import * as Location  from 'expo-location';
+// import messaging from '@react-native-firebase/messaging';
 import i18n from 'i18n-js';
 import { directus } from '../constants';
 import { addUser } from '../redux/actions';
@@ -14,25 +15,40 @@ import { useDispatch } from 'react-redux';
 export default function Login({navigation}) {
 
     const [email, setEmail] = React.useState('esraa@email.com');
-    const [pass, setPass] = React.useState('123456');
+    const [pass, setPass] = React.useState('12345');
     const [loading, setLoading] = React.useState(false);
     const [token, setToken] = React.useState('');
+    const [region, setRegion] = React.useState();
     const dispatch = useDispatch();
 
-    async function requestToken() {
-      const authStatus = await messaging().requestPermission();
-      const enabled =
-        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-      if (enabled) {
-        console.log('Authorization status:', authStatus);
-      }
-      await messaging().getToken().then(async (token) => {
-        setToken(token)
-        messaging().subscribeToTopic('workers').then(() =>{
+    // async function requestToken() {
+    //   const authStatus = await messaging().requestPermission();
+    //   const enabled =
+    //     authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+    //     authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+    //   if (enabled) {
+    //     console.log('Authorization status:', authStatus);
+    //   }
+    //   await messaging().getToken().then(async (token) => {
+    //     setToken(token)
+    //     messaging().subscribeToTopic('workers').then(() =>{
+    //       return;
+    //     })
+    //   })
+    // }
+
+    async function getLocationAsync(){
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if(status !== 'granted'){
+        alert(i18n.t('noPermission'));
           return;
-        })
-      })
+      }
+      let location = await Location.getCurrentPositionAsync({accuracy : Location.Accuracy.Lowest});
+      let region = {
+        longitude : location.coords.longitude,
+        latitude: location.coords.latitude,
+      }
+      setRegion(region);
     }
 
     async function login(){
@@ -50,7 +66,9 @@ export default function Login({navigation}) {
                 //patch
                  await directus.items('workers').updateOne(user_id, {
                    now_status: "online",
-                   notification_token: token
+                   notification_token: token,
+                   longitude: region.longitude,
+                   latitude: region.latitude
                  })
                  .then((res) =>{
                     dispatch(addUser(res));          
@@ -75,7 +93,8 @@ export default function Login({navigation}) {
     }
 
     React.useEffect(() => {
-      requestToken();
+      // requestToken();
+      getLocationAsync();
     },[]);
 
   return (

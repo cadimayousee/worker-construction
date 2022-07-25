@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Directus } from '@directus/sdk';
 import { Loading } from './Loading';
 import i18n from 'i18n-js';
-import messaging from '@react-native-firebase/messaging';
+// import messaging from '@react-native-firebase/messaging';
 import { directus } from '../constants';
 import { useSelector, useDispatch } from 'react-redux';
 import { addUser } from '../redux/actions';
@@ -66,7 +66,7 @@ export default function SettingsPassword({route,navigation}){
             dispatch(addUser(res));
             messaging().unsubscribeFromTopic('workers').then(() =>{
                 setLoading(false);
-                alert(i18n.t('relogin'));
+                alert(i18n.t('relogin2'));
                 navigation.navigate('Login')
             })
         })

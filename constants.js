@@ -6,3 +6,5 @@ export const directus = new Directus('https://iw77uki0.directus.app');
 export const api_key = '0bd2d3933c1109a2cb73570a5035c4d44d15ec5df61310d4c40239ad45454097';
 export const otpURL = `https://api.mailslurp.com/sendEmail?apiKey=${api_key}`; 
 export const otpSender = 'deeef50c-e076-4605-a1fd-abc2c6b823eb';
+export const starImageFilled = 'https://raw.githubusercontent.com/AboutReact/sampleresource/master/star_filled.png';
+export const starImageCorner = 'https://raw.githubusercontent.com/AboutReact/sampleresource/master/star_corner.png';

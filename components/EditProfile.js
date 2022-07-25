@@ -4,7 +4,7 @@ import i18n from 'i18n-js';
 import {Ionicons} from '@expo/vector-icons'; 
 import { Directus } from '@directus/sdk';
 import { Loading } from './Loading';
-import messaging from "@react-native-firebase/messaging";
+// import messaging from "@react-native-firebase/messaging";
 import axios from 'axios';
 import { directus } from '../constants';
 import { useSelector, useDispatch, shallowEqual } from 'react-redux';
